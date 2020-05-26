@@ -5,7 +5,10 @@
 #include <time.h>
 
 #define XORLIST_SZ 1000
-#define SORT_TIME_OUTPUT_FILE "sort_time_new.txt"
+#define SORT_TIME_OUTPUT_FILE "sort_time_optimized_s.txt"
+#define OPTIMIZED_S 100
+
+int opt_s = 0;
 
 typedef struct __list list;
 struct __list {
@@ -59,6 +62,27 @@ void print_list(list *l) {
   printf("\n");
 }
 
+list *bubble_sort(list *start, int cnt) {
+  for (int i = 0; i < (cnt - 1); i++) {
+    list *curr = start;
+    list *prev = NULL;
+
+    while (curr && XOR(prev, curr->addr)) {
+      list *next = XOR(prev, curr->addr);
+
+      /* Swap data */
+      if (next->data < curr->data) {
+        int tmp = curr->data;
+        curr->data = next->data;
+        next->data = tmp;
+      }
+      prev = curr;
+      curr = next;
+    }
+  }
+  return start;
+}
+
 list *sort(list *start)
 {
     if (!start || !start->addr)
@@ -76,6 +100,7 @@ list *sort(list *start)
     list *r_prev = NULL;
     list *left = start;
     list *right = XOR(r_prev, start->addr);
+    int cnt = 1;
     r_prev = start;
 
     while (right && XOR(r_prev, right->addr)) {
@@ -93,6 +118,15 @@ list *sort(list *start)
       tmp = right;
       right = XOR(r_prev, right->addr);
       r_prev = tmp;
+
+      /* Counting data numbers of sub linked list */
+      cnt++;
+    }
+
+    /* We could get length of sub linked list after divide. (cnt * 2)
+     * Bubble sorting it if its length less or equal than optimaied S. */
+    if ((cnt * 2) <= opt_s) {
+      return bubble_sort(start, (cnt * 2));
     }
 
     /* Assign right as right part of list (Next node of current left) */
@@ -148,9 +182,13 @@ int main(int argc, char *argv[]) {
   fptr = fopen(SORT_TIME_OUTPUT_FILE, "w+");
 
   srand(time(NULL));
-  for (int i = 1; i <= XORLIST_SZ; i++) {
+  for (int i = 0; i < XORLIST_SZ; i++) {
     /* Generate random data within 0~10000 */
     insert_node(&xorlist, (rand() & 10000));
+  }
+
+  for (int i = 0; i <= OPTIMIZED_S; i++) {
+    opt_s = i;
     clock_gettime(CLOCK_REALTIME, &t1);
     xorlist = sort(xorlist);
     clock_gettime(CLOCK_REALTIME, &t2);
